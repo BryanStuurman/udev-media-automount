@@ -1,4 +1,5 @@
 #!/bin/sh
+#sh is dash on ubuntu, i think some of this script tis broken, but when i swap it out for bash the mount fails.
 #$1 = <dev>
 
 # Default options to use for mounting
@@ -83,6 +84,9 @@ fi
 # directory name
 AUTOMOUNT_DIR="${mediadir}/${LABEL:-${dev##*/}}.$TYPE"
 
+# clean spaces from dirname
+AUTOMOUNT_DIR=$(echo $AUTOMOUNT_DIR | sed 's/\s\+/_/g')
+
 # Load Filesystem-specific configuration for mounting
 if [ -e "$confdir/$TYPE" ]
 then
@@ -95,14 +99,16 @@ fi
 
 log "mounting device $dev in $AUTOMOUNT_DIR"
 mkdir -p "$AUTOMOUNT_DIR"
+echo "trying mount : mount -t $AUTOMOUNT_TYPE -o $AUTOMOUNT_OPTS $dev $AUTOMOUNT_DIR" 
 if mount -t "$AUTOMOUNT_TYPE" -o "$AUTOMOUNT_OPTS" "$dev" "$AUTOMOUNT_DIR"
 then
-    # Notify
-    username="$(ps au | awk '$11 ~ /^xinit/ { print $1; exit }')"
-    [[ "$username" ]] && DISPLAY=:0 runuser -u "$username" xdg-open "$AUTOMOUNT_DIR"
+    # dont Notify user or open, headless and logged out.
+    # username="$(ps au | awk '$11 ~ /^xinit/ { print $1; exit }')"
+    # [[ "$username" ]] && DISPLAY=:0 runuser -u "$username" xdg-open "$AUTOMOUNT_DIR"
     log "Device successfully mounted: $AUTOMOUNT_DIR"
     exit 0
 else
+    echo "Mount error: $?"     
     log "Mount error: $?"
     log "Command was : mount -t $AUTOMOUNT_TYPE -o $AUTOMOUNT_OPTS $dev $AUTOMOUNT_DIR"
 
